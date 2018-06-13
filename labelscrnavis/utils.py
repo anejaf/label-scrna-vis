@@ -50,3 +50,10 @@ def nanmax_score(mat, rowvar=True):
     if rowvar:
         axis = -1
     return np.nanmax(mat, axis=axis)
+
+
+def binary_score(mat, rowvar=True, thresh=0):
+    axis = 0
+    if rowvar:
+        axis = -1
+    return np.sum(mat > thresh, axis=axis)
