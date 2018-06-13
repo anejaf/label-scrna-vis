@@ -4,15 +4,17 @@ from labelscrnavis import utils
 
 
 gene_groups = {
-    'Bcell': ['CD19', 'CD79A'],
-    'Tcell': ['CD4', 'CD3D'],
-    'Retinal_m': ['VSX2', 'OTX2', 'SXGN', 'ISL1', 'GRM6', 'APOE', 'PAX6',
-                  'RHO', 'ARR3'],
-    'Bipolar_m': ['TACR3', 'SYT2', 'NETO1', 'IRX6', 'PRKAR2B', 'GRIK1',
-                  'KCNG4', 'CABP5', 'VSX1', 'PRKCA'],
-    'Monocyte': ['S100A9', 'CD14'],
-    'NKcell': ['NKG7'],
-    'Megakaryocyte': ['PPBP'],
+    'B Cell': ['CD19', 'CD20'],
+    'T Cell': ['CD3', 'CD4', 'CD8'],
+    'Dendritic Cell': ['CD11C', 'CD123'],
+    'NK Cell': ['CD56'],
+    'Stem Cell/Precursor': ['CD34'],
+    'Macrophage/Monocyte': ['CD14', 'CD33'],
+    'Granulocyte': ['CD66B'],
+    'Platelet': ['CD41', 'CD61', 'CD62'],
+    'Erythrocyte': ['CD235A'],
+    'Epithelial Cell': ['CD146'],
+    'Endothelial Cell': ['CD326'],
 }
 
 linkages = {
@@ -24,4 +26,5 @@ linkages = {
 score_methods = {
     'avg': utils.average_score,
     'max': utils.nanmax_score,
+    'bin': utils.binary_score,
 }
