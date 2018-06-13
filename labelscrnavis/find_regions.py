@@ -3,10 +3,10 @@ from labelscrnavis import cell_scorer
 
 def assign_region(
         cells, pthresh, markers_list, cell_type='ct1',
-        neighbors=20, maxdist=None):
+        neighbors=20, maxdist=None, fc=1.5):
 
     c_scr = cell_scorer.CellScorer(
-        use_tsne=True, neighbors=neighbors, maxdist=maxdist)
+        use_tsne=True, neighbors=neighbors, maxdist=maxdist, fc=fc)
     res = c_scr.score(cells, markers_list)
 
     cells.add_col("{}".format(cell_type), res)
@@ -16,7 +16,8 @@ def assign_region(
 
 def assign_regions(
         cells, pthresh, markers_dict,
-        neighbors=20, maxdist=None, col_name='reg'):
+        neighbors=20, maxdist=None, fc=1.5,
+        col_name='reg'):
 
     """
     Assign regions to cells
@@ -32,11 +33,11 @@ def assign_regions(
     for group in markers_dict:
         cells = assign_region(
             cells, pthresh, markers_dict[group], cell_type=group,
-            neighbors=neighbors, maxdist=maxdist)
+            neighbors=neighbors, maxdist=maxdist, fc=fc)
 
     markers = list(markers_dict.keys())
     cells.add_col(
-        "reg",
+        col_name,
         cells.df[markers].idxmin(
             axis=1).where(cells.df[markers].min(axis=1) < pthresh))
 
