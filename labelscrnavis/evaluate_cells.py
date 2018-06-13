@@ -6,7 +6,7 @@ from labelscrnavis import maps
 
 
 def score_cells(
-        cells, gene_group=None, score_method='avg', binary=False):
+        cells, gene_group=None, score_method='avg', binary=False, store=False):
 
     """
     score cells from a gene group with score method,
@@ -36,7 +36,8 @@ def score_cells(
     else:
         res = scr_m(cells.data_mat(genes=gene_group))
 
-    cells.add_col(descr, res)
+    if store:
+        cells.add_col(descr, res)
     return res
 
 
@@ -73,9 +74,10 @@ def pvalue_hypergeo(region, cells, gene_group=None):
     :param region, cells: CellsDf
     """
 
-    k = np.sum(score_cells(region, gene_group=gene_group) > 0)
+    avg = np.average(score_cells(cells, gene_group=gene_group))
+    k = np.sum(score_cells(region, gene_group=gene_group) > avg)
     M = cells.shape[0]
-    n = np.sum(score_cells(cells, gene_group=gene_group) > 0)
+    n = np.sum(score_cells(cells, gene_group=gene_group) > avg)
     N = region.shape[0]
 
     return stats.hypergeom.sf(k, M, n, N)
