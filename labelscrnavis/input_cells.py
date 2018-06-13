@@ -1,6 +1,7 @@
 import pandas
 import numpy as np
 import copy
+import networkx as nx
 
 from labelscrnavis import maps
 from labelscrnavis import projection
@@ -30,14 +31,16 @@ class CellsDf():
         'ID',
         'Barcode\r',
         'Cluster ID',
-        'Cell ID',
+        'Cell ID\r',
     ]
 
-    def __init__(self, df, available_genes=None,
-                 G=None, dists=None, relevant_genes=None):
+    def __init__(self, df, info_cols=None, available_genes=None,
+                 G=None, dists={}, relevant_genes=None):
+        if info_cols is None:
+            info_cols = CellsDf._info_cols
         if available_genes is None:
             available_genes = [col for col in list(df.keys())
-                               if col not in CellsDf._info_cols]
+                               if col not in info_cols]
         if relevant_genes is None:
             relevant_genes = available_genes
         self.df = df
@@ -62,9 +65,18 @@ class CellsDf():
         return self.common(self.df.iloc[key])
 
     @classmethod
-    def from_tab(cls, filepath):
+    def from_tab(cls, filepath, info_cols=None, skip_rows=2):
         df = pandas.read_csv(filepath, sep='\t', lineterminator='\n')
-        return cls(df.iloc[2:, :].reset_index(drop=True))
+        return cls(df.iloc[skip_rows:, :].reset_index(drop=True),
+                   info_cols=info_cols)
+
+    @classmethod
+    def from_tab_transposed(cls, filepath):
+        """ deprecated """
+        df = pandas.read_csv(filepath, sep='\t', lineterminator='\n')
+        df['GENE\r'] = df['GENE\r'].map(lambda x: x.rstrip('\r'))
+        df.rename(columns={'GENE\r': 'GENE'}, inplace=True)
+        return cls(df.iloc[2:, :].set_index('GENE').T)
 
     @property
     def cols(self):
@@ -95,15 +107,42 @@ class CellsDf():
     def index(self):
         return self.df.index
 
-    def dists(self, distance='euclidean', store=False):
-        if self._dists is None:
-            dists = utils.dist_nd(
-                self.data_mat(), self.data_mat(), distance)
+    def dists(self,
+              distance='euclidean',
+              use_tsne=False,
+              pca_components=None,
+              store=False):
+        if use_tsne:
+            key = 'tsne'
+            X = self.tsne_proj
+        elif pca_components is not None:
+            key = 'pca' + str(pca_components)
+            X = projection.pca(self.data_mat(), n_components=pca_components)
         else:
-            dists = self._dists
+            key = 'orig'
+            X = self.data_mat()
+        dists = self._dists.get(key, None)
+        if dists is None:
+            dists = utils.dist_nd(X, X, distance)
         if store:
-            self._dists = dists
+            self._dists[key] = dists
         return dists
+
+    def G(self,
+          maxdist, dists=None,
+          distance='euclidean', tsne=False, pca=None,
+          store=False):
+        if dists is None:
+            dists = self.dists(
+                distance=distance, use_tsne=tsne, pca_components=pca)
+        if self._G is None:
+            adj_arr = dists < maxdist
+            G = nx.Graph(adj_arr)
+        else:
+            G = self._G
+        if store:
+            self._G = G
+        return G
 
     def common(self, df):
         """ returns a similar object, with only Df changed"""
@@ -127,6 +166,7 @@ class CellsDf():
         if genes is not None:
             if isinstance(genes, list):
                 cols = genes
+                cols = cols #+ [col.upper() for col in cols]
             else:
                 cols = maps.gene_groups.get(genes, self.available_genes)
         cols = [col for col in cols if col in self.cols]
@@ -149,5 +189,15 @@ class CellsDf():
 
     def add_col(self, col_name, col_data):
         """ add a column to df """
+        if col_name in self.df:
+            print("Warning: column with this name already exists, \
+            replacing this column new data...")
+            del self.df[col_name]
         self.df[col_name] = col_data
         return
+
+    def recompute_tsne(self):
+        tsne_proj = projection.tsne(projection.pca(self.data_mat()))
+        self.df['tsne_x'] = tsne_proj[:, 0]
+        self.df['tsne_y'] = tsne_proj[:, 1]
+        return tsne_proj
