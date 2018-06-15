@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import stats
-from numba import jit
 
 
 def decide_maxdist(dists, neighbors=5):
@@ -26,13 +25,12 @@ def decide_maxdist(dists, neighbors=5):
     return maxn[np.argmax(dsts)]
 
 
-@jit
 def loop_scores(bin_scores, adj_arr):
 
     """
     Score cells in a simple loop,
     score(cell) = p-value for siginificance of a cell's neighborhood
-    (Simple loop for successful parallelization with numba)
+    (Simple loop for faster computations)
 
     :param bin_scores: binary scores for cells
     :param adj_arr: adjecancy array of cells (bin. numpy array: 1 if cells
